@@ -8,4 +8,4 @@
 // Contoh:
 // const GAS_URL = "https://script.google.com/macros/s/AKfycbxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx/exec";
 
-const GAS_URL = "TEMPEL_URL_WEB_APP_ANDA_DI_SINI";
+const GAS_URL = "AKfycbzUw4wgeopnzqz537XreVsB1tWLpF7VyNd4fSnOng4a49yd6V5ost1rfbdOqjgoM88kxQ/exec";
