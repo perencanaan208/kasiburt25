@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no">
+<title>Kas Ibu-ibu — Karanggeneng RT 25 Mangen</title>
+<meta name="theme-color" content="#7A2348">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Kas Ibu-ibu RT 25">
+
+<!-- ============================================================ -->
+<!-- FAVICON & MANIFEST STATIS - fallback awal (file sungguhan di repo) -->
+<!-- ID ditambahkan supaya bisa "ditingkatkan" otomatis lewat JS begitu -->
+<!-- Anda mengganti Ikon Aplikasi lewat menu Pengaturan di aplikasi.   -->
+<!-- File statis di sini WAJIB ada sejak awal (bukan diisi lewat JS   -->
+<!-- belakangan) supaya Chrome sudah menganggap halaman installable   -->
+<!-- sejak dimuat pertama kali - lihat script di bawah untuk detail.  -->
+<!-- ============================================================ -->
+<link rel="icon" type="image/png" sizes="48x48" href="/favicon.png" id="wrapFavicon32">
+<link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png" id="wrapFavicon192">
+<link rel="apple-touch-icon" href="/icon-192.png" id="wrapTouchIcon">
+<link rel="manifest" href="/manifest.json" id="wrapManifestLink">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+  *{ box-sizing:border-box; margin:0; padding:0; }
+  html, body{ height:100%; overflow:hidden; font-family:'Nunito Sans', sans-serif; background:#FBF2EA; }
+
+  #frameWrap{ position:fixed; inset:0; }
+  #gasFrame{ width:100%; height:100%; border:none; display:block; background:#FBF2EA; }
+
+  /* Loading overlay, ditampilkan sampai iframe selesai memuat */
+  #loading{
+    position:fixed; inset:0; z-index:10; display:flex; flex-direction:column;
+    align-items:center; justify-content:center; gap:14px; background:#FBF2EA;
+    transition:opacity .3s ease;
+  }
+  #loading.hide{ opacity:0; pointer-events:none; }
+  #loading img{ width:56px; height:56px; animation:pulse 1.6s ease-in-out infinite; }
+  @keyframes pulse{ 0%,100%{ transform:scale(1); opacity:1; } 50%{ transform:scale(1.08); opacity:.75; } }
+  .spinner{ width:38px; height:38px; border:3px solid #EDDDD1; border-top-color:#7A2348; border-radius:50%; animation:spin .8s linear infinite; }
+  @keyframes spin{ to{ transform:rotate(360deg); } }
+  #loading p{ font-size:13.5px; color:#5B6459; font-weight:600; }
+</style>
+</head>
+<body>
+
+  <div id="loading">
+    <div class="spinner"></div>
+    <p>Memuat aplikasi kas ibu-ibu RT 25...</p>
+  </div>
+
+  <div id="frameWrap">
+    <iframe id="gasFrame" title="Kas Ibu-ibu RT 25" referrerpolicy="no-referrer-when-downgrade" allow="clipboard-write"></iframe>
+  </div>
+
+<script src="config.js"></script>
+<script>
+(function(){
+  var frame = document.getElementById('gasFrame');
+  var loading = document.getElementById('loading');
+
+  if (typeof GAS_URL !== 'string' || GAS_URL.indexOf('script.google.com') === -1) {
+    loading.querySelector('p').textContent = 'URL Web App belum diatur. Buka file config.js dan tempel URL /exec dari Apps Script Anda.';
+    return;
+  }
+
+  var loaded = false;
+  frame.addEventListener('load', function(){
+    loaded = true;
+    loading.classList.add('hide');
+    try { sessionStorage.removeItem('kasReloadAttempts'); } catch(e){}
+  });
+
+  frame.src = GAS_URL;
+
+  // Jika dalam 6 detik iframe belum juga memuat (biasanya karena diblokir
+  // kebijakan frame Google saat proses login/otorisasi), reload halaman ini
+  // secara otomatis (biasanya berhasil di percobaan berikutnya). Dibatasi
+  // maksimal 3 kali percobaan berturut-turut supaya tidak reload selamanya
+  // kalau memang sedang benar-benar bermasalah.
+  setTimeout(function(){
+    if (loaded) return;
+    var attempts = 0;
+    try { attempts = parseInt(sessionStorage.getItem('kasReloadAttempts') || '0', 10); } catch(e){}
+    if (attempts < 3) {
+      try { sessionStorage.setItem('kasReloadAttempts', String(attempts + 1)); } catch(e){}
+      location.reload();
+    }
+    // Kalau sudah 3x tetap gagal, biarkan layar loading tetap tampil
+    // (tidak menampilkan pesan apa pun) sampai koneksi/izin membaik.
+  }, 6000);
+
+  // ============================================================
+  // IKON APLIKASI DINAMIS - ambil ikon terbaru yang diupload lewat
+  // "Pengaturan > Icon Aplikasi" di aplikasi, lalu terapkan ke favicon/
+  // apple-touch-icon/manifest halaman WRAPPER INI (bukan ke iframe-nya).
+  // WAJIB dilakukan di sini, bukan di dalam HTML yang disajikan Apps
+  // Script - karena keluaran HtmlService Apps Script selalu dibungkus
+  // iframe oleh Google, jadi <link> di dalamnya TIDAK PERNAH terlihat
+  // oleh browser untuk kebutuhan "Install app"/"Simpan ke Layar Utama".
+  // ============================================================
+  (function terapkanIkonDariAplikasi() {
+    try {
+      var gasUrl = GAS_URL.split('?')[0];
+      fetch(gasUrl + '?type=iconUrl')
+        .then(function (res) { return res.json(); })
+        .then(function (data) {
+          var iconSrc = data && data.url;
+          if (!iconSrc) return; // belum ada icon custom diupload -> tetap pakai file statis
+
+          var f32 = document.getElementById('wrapFavicon32');
+          var f192 = document.getElementById('wrapFavicon192');
+          var touch = document.getElementById('wrapTouchIcon');
+          if (f32) f32.setAttribute('href', iconSrc);
+          if (f192) f192.setAttribute('href', iconSrc);
+          if (touch) touch.setAttribute('href', iconSrc);
+
+          // Manifest dibuat ulang sebagai Blob di halaman wrapper ini sendiri.
+          // start_url & scope menunjuk ke origin wrapper ini sendiri ("/"),
+          // karena syarat "installability" Chrome mengharuskan start_url
+          // berada di origin yang sama dengan halaman yang memuat manifest.
+          var manifestBaru = {
+            name: "Kas Ibu-ibu — Karanggeneng RT 25 Mangen",
+            short_name: 'Kas RT 25',
+            start_url: '/',
+            scope: '/',
+            display: 'standalone',
+            background_color: '#FBF2EA',
+            theme_color: '#7A2348',
+            icons: [
+              { src: iconSrc, sizes: '192x192', type: 'image/png', purpose: 'any' },
+              { src: iconSrc, sizes: '512x512', type: 'image/png', purpose: 'any' }
+            ]
+          };
+          var blob = new Blob([JSON.stringify(manifestBaru)], { type: 'application/json' });
+          var manifestLink = document.getElementById('wrapManifestLink');
+          if (manifestLink) manifestLink.setAttribute('href', URL.createObjectURL(blob));
+        })
+        .catch(function () { /* diam-diam gagal, tetap pakai favicon/manifest statis */ });
+    } catch (e) { /* diam-diam gagal, bukan fitur kritikal */ }
+  })();
+
+  // Service worker minimal - WAJIB terdaftar supaya Chrome Android
+  // menganggap halaman ini benar-benar installable (ikon bersih tanpa
+  // badge kecil logo Chrome di pojoknya).
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('/sw.js').catch(function () {});
+  }
+})();
+</script>
+</body>
+</html>
