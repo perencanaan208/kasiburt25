@@ -10,20 +10,24 @@
 <meta name="apple-mobile-web-app-title" content="Kas Ibu-ibu RT 25">
 
 <!-- ============================================================ -->
-<!-- FAVICON & MANIFEST STATIS - fallback awal (file sungguhan di repo) -->
-<!-- ID ditambahkan supaya bisa "ditingkatkan" otomatis lewat JS begitu -->
-<!-- Anda mengganti Ikon Aplikasi lewat menu Pengaturan di aplikasi.   -->
-<!-- File statis di sini WAJIB ada sejak awal (bukan diisi lewat JS   -->
-<!-- belakangan) supaya Chrome sudah menganggap halaman installable   -->
-<!-- sejak dimuat pertama kali - lihat script di bawah untuk detail.  -->
+<!-- FAVICON statis (file sungguhan di repo) - dipakai sebagai tampilan -->
+<!-- awal & fallback. Nilai href-nya ditingkatkan otomatis lewat JS di  -->
+<!-- bawah begitu Anda mengganti Icon Aplikasi lewat menu Pengaturan.  -->
+<!--                                                                    -->
+<!-- MANIFEST sengaja menunjuk ke /api/manifest (bukan file statis)     -->
+<!-- karena manifest itu DIBUAT DI SERVER (lihat api/manifest.js) —     -->
+<!-- ini penting supaya ikon custom benar-benar terbaca Chrome saat     -->
+<!-- "Install this page as an app" di PC. Kalau manifest ditukar lewat  -->
+<!-- JavaScript setelah halaman dimuat, Chrome sering tidak membaca     -->
+<!-- ulang isinya — makanya harus sudah benar SEJAK AWAL lewat server.  -->
 <!-- ============================================================ -->
 <link rel="icon" type="image/png" sizes="48x48" href="/favicon.png" id="wrapFavicon32">
 <link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png" id="wrapFavicon192">
 <link rel="apple-touch-icon" href="/icon-192.png" id="wrapTouchIcon">
-<link rel="manifest" href="/manifest.json" id="wrapManifestLink">
+<link rel="manifest" href="/api/manifest">
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Nunito+Sans:wght@500;600;700&display=swap" rel="stylesheet">
 <style>
   *{ box-sizing:border-box; margin:0; padding:0; }
   html, body{ height:100%; overflow:hidden; font-family:'Nunito Sans', sans-serif; background:#FBF2EA; }
@@ -94,15 +98,15 @@
   }, 6000);
 
   // ============================================================
-  // IKON APLIKASI DINAMIS - ambil ikon terbaru yang diupload lewat
-  // "Pengaturan > Icon Aplikasi" di aplikasi, lalu terapkan ke favicon/
-  // apple-touch-icon/manifest halaman WRAPPER INI (bukan ke iframe-nya).
-  // WAJIB dilakukan di sini, bukan di dalam HTML yang disajikan Apps
-  // Script - karena keluaran HtmlService Apps Script selalu dibungkus
-  // iframe oleh Google, jadi <link> di dalamnya TIDAK PERNAH terlihat
-  // oleh browser untuk kebutuhan "Install app"/"Simpan ke Layar Utama".
+  // FAVICON & APPLE-TOUCH-ICON DINAMIS - ambil ikon terbaru yang diupload
+  // lewat "Pengaturan > Icon Aplikasi" di aplikasi, lalu terapkan ke
+  // halaman WRAPPER INI (bukan ke iframe-nya). Ini melengkapi manifest
+  // dinamis di /api/manifest — dua-duanya perlu diperbarui karena beda
+  // jalur: manifest dipakai Chrome desktop saat "Install as app", favicon/
+  // apple-touch-icon ini dipakai browser mobile saat "Add to Home Screen"
+  // dan sebagai ikon tab biasa.
   // ============================================================
-  (function terapkanIkonDariAplikasi() {
+  (function terapkanFaviconDariAplikasi() {
     try {
       var gasUrl = GAS_URL.split('?')[0];
       fetch(gasUrl + '?type=iconUrl')
@@ -110,36 +114,14 @@
         .then(function (data) {
           var iconSrc = data && data.url;
           if (!iconSrc) return; // belum ada icon custom diupload -> tetap pakai file statis
-
           var f32 = document.getElementById('wrapFavicon32');
           var f192 = document.getElementById('wrapFavicon192');
           var touch = document.getElementById('wrapTouchIcon');
           if (f32) f32.setAttribute('href', iconSrc);
           if (f192) f192.setAttribute('href', iconSrc);
           if (touch) touch.setAttribute('href', iconSrc);
-
-          // Manifest dibuat ulang sebagai Blob di halaman wrapper ini sendiri.
-          // start_url & scope menunjuk ke origin wrapper ini sendiri ("/"),
-          // karena syarat "installability" Chrome mengharuskan start_url
-          // berada di origin yang sama dengan halaman yang memuat manifest.
-          var manifestBaru = {
-            name: "Kas Ibu-ibu — Karanggeneng RT 25 Mangen",
-            short_name: 'Kas RT 25',
-            start_url: '/',
-            scope: '/',
-            display: 'standalone',
-            background_color: '#FBF2EA',
-            theme_color: '#7A2348',
-            icons: [
-              { src: iconSrc, sizes: '192x192', type: 'image/png', purpose: 'any' },
-              { src: iconSrc, sizes: '512x512', type: 'image/png', purpose: 'any' }
-            ]
-          };
-          var blob = new Blob([JSON.stringify(manifestBaru)], { type: 'application/json' });
-          var manifestLink = document.getElementById('wrapManifestLink');
-          if (manifestLink) manifestLink.setAttribute('href', URL.createObjectURL(blob));
         })
-        .catch(function () { /* diam-diam gagal, tetap pakai favicon/manifest statis */ });
+        .catch(function () { /* diam-diam gagal, tetap pakai favicon statis */ });
     } catch (e) { /* diam-diam gagal, bukan fitur kritikal */ }
   })();
 
