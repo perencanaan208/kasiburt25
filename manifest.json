@@ -1,14 +1,58 @@
-{
-  "name": "Kas Ibu-ibu — Karanggeneng RT 25 Mangen",
-  "short_name": "Kas RT 25",
-  "start_url": "/",
-  "scope": "/",
-  "display": "standalone",
-  "background_color": "#FBF2EA",
-  "theme_color": "#7A2348",
-  "icons": [
-    { "src": "/favicon.png", "sizes": "48x48", "type": "image/png" },
-    { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
-    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" }
-  ]
+// Vercel Serverless Function — /api/manifest
+//
+// KENAPA INI DIPERLUKAN:
+// Dialog "Install this page as an app" di Chrome desktop membaca <link
+// rel="manifest"> hanya SATU KALI saat halaman pertama kali dimuat/di-parse.
+// Kalau kita "menukar" href-nya belakangan lewat JavaScript (setelah fetch
+// selesai), Chrome sering kali TIDAK membaca ulang manifest itu — makanya
+// ikon custom yang diupload di Pengaturan tidak muncul di dialog Install,
+// walau sudah berhasil tampil di HP (yang jalurnya beda, lewat favicon/
+// apple-touch-icon langsung).
+//
+// SOLUSINYA: manifest.json dibuat DINAMIS DI SERVER (di sini), supaya saat
+// index.html memuat <link rel="manifest" href="/api/manifest"> dari awal,
+// isinya SUDAH mengandung URL icon custom yang benar — tidak perlu ditukar
+// lagi lewat JavaScript di sisi browser.
+
+const GAS_URL = "https://script.google.com/macros/s/AKfycbzUw4wgeopnzqz537XreVsB1tWLpF7VyNd4fSnOng4a49yd6V5ost1rfbdOqjgoM88kxQ/exec";
+
+module.exports = async function handler(req, res) {
+  let iconUrl = null;
+
+  try {
+    const base = GAS_URL.split('?')[0];
+    const r = await fetch(base + '?type=iconUrl');
+    const data = await r.json();
+    if (data && data.url) iconUrl = data.url;
+  } catch (err) {
+    // Gagal ambil dari GAS (mis. sedang offline) -> pakai ikon bawaan statis di bawah.
+  }
+
+  const icons = iconUrl
+    ? [
+        { src: iconUrl, sizes: '192x192', type: 'image/png', purpose: 'any' },
+        { src: iconUrl, sizes: '512x512', type: 'image/png', purpose: 'any' }
+      ]
+    : [
+        { src: '/favicon.png', sizes: '48x48', type: 'image/png' },
+        { src: '/icon-192.png', sizes: '192x192', type: 'image/png', purpose: 'any' },
+        { src: '/icon-512.png', sizes: '512x512', type: 'image/png', purpose: 'any' }
+      ];
+
+  const manifest = {
+    name: "Kas Ibu-ibu — Karanggeneng RT 25 Mangen",
+    short_name: 'Kas RT 25',
+    start_url: '/',
+    scope: '/',
+    display: 'standalone',
+    background_color: '#FBF2EA',
+    theme_color: '#7A2348',
+    icons: icons
+  };
+
+  res.setHeader('Content-Type', 'application/manifest+json');
+  // Cache 5 menit di sisi CDN Vercel, supaya tidak menghubungi GAS di setiap request,
+  // tapi tetap cukup cepat mengikuti kalau iconnya baru saja diganti di Pengaturan.
+  res.setHeader('Cache-Control', 'public, max-age=300, s-maxage=300');
+  res.status(200).send(JSON.stringify(manifest));
 }
